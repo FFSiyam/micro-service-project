@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Item Manager</title>
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        background-color: #f7f9fc;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+      .container {
+        background-color: #ffffff;
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        width: 400px;
+        max-width: 100%;
+      }
+      h1 {
+        margin: 0 0 20px 0;
+        font-size: 24px;
+        color: #333;
+        text-align: center;
+      }
+      input[type="text"] {
+        width: calc(100% - 20px);
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+        font-size: 16px;
+      }
+      input[type="submit"] {
+        width: 100%;
+        padding: 10px;
+        margin-top: 10px;
+        border-radius: 5px;
+        border: none;
+        background-color: #28a745;
+        color: #fff;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+      input[type="submit"]:hover {
+        background-color: #218838;
+      }
+      .message {
+        margin: 20px 0;
+        font-weight: bold;
+        text-align: center;
+      }
+      .message.success {
+        color: #28a745;
+      }
+      .message.error {
+        color: #dc3545;
+      }
+      h2 {
+        font-size: 20px;
+        color: #333;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+      ul {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+      }
+      li {
+        background-color: #f8f9fa;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        padding: 10px;
+        margin: 5px 0;
+        font-size: 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      li:nth-child(even) {
+        background-color: #e9ecef;
+      }
+      .delete-btn {
+        background-color: #dc3545;
+        color: #fff;
+        border: none;
+        border-radius: 5px;
+        padding: 5px 10px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .delete-btn:hover {
+        background-color: #c82333;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Item Manager</h1>
+      <form id="addItemForm">
+        <input type="text" id="item" placeholder="Enter item" required />
+        <input type="submit" value="Add Item" />
+      </form>
+      <div class="message" id="message"></div>
+      <h2>Items List</h2>
+      <ul id="itemsList"></ul>
+    </div>
+
+    <script>
+      document
+        .getElementById("addItemForm")
+        .addEventListener("submit", function (event) {
+          event.preventDefault();
+
+          const item = document.getElementById("item").value;
+          const messageDiv = document.getElementById("message");
+
+          fetch("http://34.118.226.108:3001/add", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ item: item }),
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.error) {
+                messageDiv.textContent = `Error: ${data.error}`;
+                messageDiv.className = "message error";
+              } else {
+                messageDiv.textContent = "Item added successfully!";
+                messageDiv.className = "message success";
+                document.getElementById("item").value = ""; // Clear the input field
+                loadItems(); // Reload items list
+              }
+            })
+            .catch((error) => {
+              messageDiv.textContent = `Error: ${error.message}`;
+              messageDiv.className = "message error";
+            });
+        });
+
+      function loadItems() {
+        fetch("http://34.118.226.108:3001/items")
+          .then((response) => response.json())
+          .then((data) => {
+            const itemsList = document.getElementById("itemsList");
+            itemsList.innerHTML = ""; // Clear the list before adding new items
+
+            data.forEach((item) => {
+              const listItem = document.createElement("li");
+              listItem.textContent = item.item;
+
+              // Create delete button
+              const deleteBtn = document.createElement("button");
+              deleteBtn.textContent = "Delete";
+              deleteBtn.className = "delete-btn";
+              deleteBtn.onclick = function () {
+                deleteItem(item.id);
+              };
+
+              listItem.appendChild(deleteBtn);
+              itemsList.appendChild(listItem);
+            });
+          })
+          .catch((error) => {
+            console.error("Error fetching items:", error);
+          });
+      }
+
+      function deleteItem(id) {
+        fetch(`http://34.118.226.108:3001/delete/${id}`, {
+          method: "DELETE",
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.error) {
+              alert(`Error: ${data.error}`);
+            } else {
+              loadItems(); // Reload items list after deletion
+            }
+          })
+          .catch((error) => {
+            alert(`Error: ${error.message}`);
+          });
+      }
+
+      // Load items on page load
+      loadItems();
+    </script>
+  </body>
+</html>
